@@ -23,4 +23,4 @@ ECHO Arquivo mantido!
 ECHO.
 
 :fim
-PAUSE
+start acoes.v5.db /autostart

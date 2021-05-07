@@ -6,7 +6,7 @@ group by h.cd_acao having sum(ic_1_00_pc) >= 23) WHERE VOLUME > 30000000 ORDER B
 
 -- Detalhes de uma ação específica
 SELECT cd_acao, dt_pregao, vr_fechamento as cotacao, vr_volume, pc_variacao as '%', vr_maximo_dia as vr_max, vr_minimo_dia as vr_min, pc_maximo_dia as pc_max, pc_minimo_dia as pc_min, ">>>>" as ">", pc_abertura as abert, "<<<<" as "<", case ic_1_00_pc when 1 then 'sim' else '' end _1_00, case ic_1_50_pc when 1 then 'sim' else '' end _1_50, case ic_2_00_pc when 1 then 'sim' else '' end _2_00, case ic_2_50_pc when 1 then 'sim' else '' end _2_50, case ic_3_00_pc when 1 then 'sim' else '' end _3_00, vr_result_1_00_pc as vr_1_00, vr_result_1_50_pc as vr_1_50, vr_result_2_00_pc as vr_2_00, vr_result_2_50_pc as vr_2_50, vr_result_3_00_pc as vr_3_00
-FROM hist_dados WHERE cd_acao LIKE 'AERI3%' and  dt_pregao <> '2019-01-02' ORDER BY 2 DESC , 1 DESC
+FROM hist_dados WHERE cd_acao LIKE 'AGRO3%' and  dt_pregao <> '2019-01-02' ORDER BY 2 DESC , 1 DESC
 
 -- Ações com melhores médias de ganho na abertura dentro das ações que mais bateram 1%
 SELECT A.cd_acao, avg(A.pc_abertura), AVG(A.vr_volume)
