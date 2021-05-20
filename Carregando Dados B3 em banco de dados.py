@@ -18,9 +18,9 @@ FROM hist_dados WHERE cd_acao LIKE 'BIDI11%' and  dt_pregao <> '2019-01-02' ORDE
 SELECT A.cd_acao, avg(A.pc_abertura), AVG(A.vr_volume)
 FROM hist_dados A
 INNER JOIN (select cd_acao, ic_1_00_pc from hist_dados
-			where dt_pregao in (select distinct dt_pregao 
-			from hist_dados order by 1 DESC limit 25)
-			group by cd_acao having sum(ic_1_00_pc) >= 22) B
+            where dt_pregao in (select distinct dt_pregao 
+            from hist_dados order by 1 DESC limit 25)
+            group by cd_acao having sum(ic_1_00_pc) >= 22) B
 ON A.cd_acao = B.cd_acao
 where A.dt_pregao <> '2019-01-02'
 group by A.cd_acao having AVG(A.vr_volume) > 1000000
@@ -107,13 +107,25 @@ def registro_acoes(reg, lista_aux, TIPREGprox, x):
     else:
         vr_fechamento_ant = float(lista_aux[x + 1][108:121]) / 100
     vr_volume = float(reg[170:188]) / 100
-    pc_variacao = round(((vr_fechamento / vr_fechamento_ant) - 1) * 100, 2)
+    if vr_fechamento_ant == 0:
+        pc_variacao = 9999
+    else:
+        pc_variacao = round(((vr_fechamento / vr_fechamento_ant) - 1) * 100, 2)
     vr_maximo_dia = float(reg[69:82]) / 100
     vr_minimo_dia = float(reg[82:95]) / 100
-    pc_maximo_dia = round(((vr_maximo_dia / vr_fechamento_ant) - 1) * 100, 2)
-    pc_minimo_dia = round(((vr_minimo_dia / vr_fechamento_ant) - 1) * 100, 2)
+    if vr_fechamento_ant == 0:
+        pc_maximo_dia = 9999
+    else:
+        pc_maximo_dia = round(((vr_maximo_dia / vr_fechamento_ant) - 1) * 100, 2)
+    if vr_fechamento_ant == 0:
+        pc_minimo_dia = 9999
+    else:
+        pc_minimo_dia = round(((vr_minimo_dia / vr_fechamento_ant) - 1) * 100, 2)
     vr_abertura = float(reg[56:69]) / 100
-    pc_abertura = round(((vr_abertura / vr_fechamento_ant) - 1) * 100, 2)
+    if vr_fechamento_ant == 0:
+        pc_abertura = 9999
+    else:
+        pc_abertura = round(((vr_abertura / vr_fechamento_ant) - 1) * 100, 2)
     if pc_maximo_dia > 1:
         ic_1_00_pc = 1
     else:
