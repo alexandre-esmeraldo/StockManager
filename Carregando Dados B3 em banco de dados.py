@@ -34,11 +34,11 @@ sql_insert = 'INSERT INTO hist_dados VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
 def registros(ano1, ano2):
     lista1, lista2 = (), ()
 
-    f = open("COTAHIST_A" + str(ano1) + ".TXT", "r")
+    f = open("arquivos/COTAHIST_A" + str(ano1) + ".TXT", "r")
     if f.mode == 'r':
         lista1 = f.readlines()
 
-    f = open("COTAHIST_A" + str(ano2) + ".TXT", "r")
+    f = open("arquivos/COTAHIST_A" + str(ano2) + ".TXT", "r")
     if f.mode == 'r':
         lista2 = f.readlines()
 

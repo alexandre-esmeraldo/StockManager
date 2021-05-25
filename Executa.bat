@@ -1,8 +1,8 @@
 @echo off
 ECHO.
 ECHO Extraindo dados hist¢ricos.
-rem winrar x -o COTAHIST_A2021.ZIP
-7z e -y COTAHIST_A2021.ZIP
+rem winrar x -o arquivos\COTAHIST_A2021.ZIP
+7z e -y arquivos\COTAHIST_A2021.ZIP -oarquivos\
 ECHO Conclu¡do!
 
 python "Carregando Dados B3 em banco de dados.py"
@@ -13,7 +13,7 @@ IF '%resp%'=='S' GOTO excluir
 IF NOT '%resp%'=='s' GOTO manter
 
 :excluir
-del COTAHIST_A2021.ZIP
+del arquivos\COTAHIST_A2021.ZIP
 ECHO Arquivo exclu¡do!
 ECHO.
 GOTO fim
