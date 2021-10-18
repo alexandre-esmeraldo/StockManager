@@ -23,4 +23,5 @@ ECHO Arquivo mantido!
 ECHO.
 
 :fim
+del arquivos\COTAHIST_A2021.TXT
 start acoes.v5.db /autostart
