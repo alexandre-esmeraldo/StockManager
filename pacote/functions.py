@@ -87,7 +87,7 @@ def condicao30(df_tmp):
 
 def buscaPeriodos(df, qt_dias):
     return df.loc[
-        df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias])].sort_values(
+        df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias-1])].sort_values(
         ["cdAcao", "dtPregao"], ascending=False)
 
 
@@ -100,7 +100,7 @@ def buscaMedia(df_ent, coluna, index_name):
 
 
 def montaDfPeriodos(df_origem, qt_dias):
-    df_dias = buscaPeriodos(df_origem, qt_dias - 1)
+    df_dias = buscaPeriodos(df_origem, qt_dias)
 
     df05 = somatorioPcMaxDia(df_dias, 0.5, "0.5%")
     df10 = somatorioPcMaxDia(df_dias, 1.0, "resultado")
