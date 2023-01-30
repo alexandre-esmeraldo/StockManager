@@ -29,7 +29,7 @@ def leituraArquivos(periodo):
             , "vrMinDia": PREMIN
             , "vrAbert": PREABE
          }
-    ).sort_values(["cdAcao", "dtPregao"], ascending=True)
+    )
 
     return df_origem
 
@@ -40,7 +40,7 @@ def carrega_dados(arquivos):
     for i in range(1, len(arquivos)):
         df = pd.concat([df, leituraArquivos(arquivos[i])])
 
-    #    df = pd.concat([df_112021, df_122021, df])
+        df = df.sort_values(["cdAcao", "dtPregao"], ascending=True)
 
     df["pcVar"], df["pcMaxDia"], df["pcMinDia"], df["pcAbert"] = [
         ((df.vrFech / df.vrFech.shift(1)) - 1) * 100
@@ -87,7 +87,7 @@ def condicao30(df_tmp):
 
 def buscaPeriodos(df, qt_dias):
     return df.loc[
-        df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias-1])].sort_values(
+        df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias - 1])].sort_values(
         ["cdAcao", "dtPregao"], ascending=False)
 
 
@@ -130,3 +130,38 @@ def montaTabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech):
 
 def consultaAcao(df, cd_acao):
     return df.loc[(df["cdAcao"] == cd_acao)].replace(0, "").sort_values(["dtPregao"], ascending=False)
+
+
+def montaLucroPeriodo(df, qt_dias, dias_ant, ic_sort):
+    qt_dias_full = qt_dias + dias_ant
+
+    dfNdias = buscaPeriodos(df, qt_dias_full)
+
+    i = 0
+    dt_max = dfNdias["dtPregao"].max()
+    while i < dias_ant:
+        dfNdias = dfNdias.loc[dfNdias["dtPregao"] != dt_max]
+        dt_max = dfNdias["dtPregao"].max()
+        i += 1
+
+    dfNdias = dfNdias.loc[dfNdias["vrFech"] >= 5]
+
+    dt_min = dfNdias["dtPregao"].min()
+    print('\033[94m' + '\033[1m' + f"{dt_min:%Y-%m-%d}" + " >> " + f"{dt_max:%Y-%m-%d}")
+    dfDtMin = dfNdias.loc[(dfNdias["dtPregao"] == dt_min)].set_index(["cdAcao"])
+    dfDtMax = dfNdias.loc[(dfNdias["dtPregao"] == dt_max)].set_index(["cdAcao"])
+    dfAvgVol = buscaMedia(dfNdias, "vrVolume", "vol").set_index(["cdAcao"])
+
+    dfPcNdias = pd.DataFrame({
+        "dtInicio": dfDtMin["dtPregao"], "dtFim": dfDtMax["dtPregao"]
+        , "vrInicio": dfDtMin["vrFech"], "vrFim": dfDtMax["vrFech"]
+        , "pcPeriodo": ((dfDtMax["vrFech"] - dfDtMin["vrFech"]) / dfDtMin["vrFech"]) * 100
+        , "avgVol": dfAvgVol["vol"]
+    })
+
+    dfPcNdias = dfPcNdias.loc[
+        (dfPcNdias["avgVol"] > 6000000)].sort_values(["pcPeriodo"], ascending=False) if ic_sort else dfPcNdias
+
+    dfPcNdias.insert(6, 'posicao', range(1, 1 + len(dfPcNdias)))
+
+    return dfPcNdias
