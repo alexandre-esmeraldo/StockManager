@@ -1,6 +1,6 @@
 # StockManager
 
-Olá, benvindo.
+Olá, bem-vindo.
 
 Esse projeto analisa o histórico de comportamento de ações da Bovespa na tentativa de prever qual ação tem maior probabilidade de atingir 1% de valorização no pregão seguinte, baseado no valor de fechamento.
 
