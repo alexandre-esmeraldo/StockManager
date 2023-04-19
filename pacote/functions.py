@@ -129,7 +129,9 @@ def montaTabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech):
 
 
 def consultaAcao(df, cd_acao):
-    return df.loc[(df["cdAcao"] == cd_acao)].replace(0, "").sort_values(["dtPregao"], ascending=False)
+    df_out = df
+    df_out['vrVolume'] = df['vrVolume'].map('{:,.0f}'.format)
+    return df_out.loc[(df_out["cdAcao"] == cd_acao)].replace(0, "").sort_values(["dtPregao"], ascending=False)
 
 
 def montaLucroPeriodo(df, qt_dias, dias_ant, ic_sort):
