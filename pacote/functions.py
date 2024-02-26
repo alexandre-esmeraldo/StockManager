@@ -8,7 +8,7 @@ def leitura_arquivos(periodo):
 
     DTEXCH, CODNEG, PREABE, PREMAX, PREMIN, PREULT, VOLTOT = ([] for i in range(7))
 
-    valores_codbdi = ['02', '07', '08']
+    valores_codbdi = ['02', '07', '08', '34']
 
     with ZipFile(arq_zip) as myzip:
         with myzip.open(arq_txt) as myfile:
@@ -132,7 +132,7 @@ def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech):
 def consulta_acao(df, cd_acao):
     df_out = df.copy()
     df_out['vrVolume'] = df['vrVolume'].map('{:,.0f}'.format)
-    return df_out.loc[(df_out["cdAcao"] == cd_acao)].replace(0, "").sort_values(["dtPregao"], ascending=False)
+    return df_out.loc[(df_out["cdAcao"] == cd_acao.upper())].replace(0, "").sort_values(["dtPregao"], ascending=False)
 
 
 def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
