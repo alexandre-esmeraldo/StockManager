@@ -164,3 +164,57 @@ def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
     df_pc_n_dias.insert(6, 'posicao', range(1, 1 + len(df_pc_n_dias)))
 
     return df_pc_n_dias
+
+
+def filtra_data(df, data="max"):
+    # formato da data: 'aaaa-mm-dd'
+    dt_max = df["dtPregao"].max() if data == "max" else datetime.strptime(data, '%Y-%m-%d')
+    df_max_dt = df.loc[df["dtPregao"] == dt_max]
+    return df_max_dt
+
+
+def verifica_mudanca_vol(df, data="max"):
+    # data = "2024-04-04"
+    df_max_dt = filtra_data(df, data)
+
+    df_2max_dt = df.copy()
+    df_2max_dt = df_2max_dt.loc[df_2max_dt["dtPregao"] < df_max_dt.iloc[0, 1]]
+    df_2max_dt = filtra_data(df_2max_dt)
+
+    df_max_dt = df_max_dt[["cdAcao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
+    df_2max_dt = df_2max_dt[["cdAcao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
+
+    merge_max = pd.merge(df_2max_dt[['cdAcao', 'dtPregao', 'vrVolume', 'pcVar', 'vrFech']],
+                         df_max_dt[['cdAcao', 'vrVolume', 'pcVar', 'vrFech', 'dtPregao']], how='inner', on=['cdAcao'])
+    merge_max = merge_max.loc[(merge_max["vrVolume_x"] > 1000000) &
+                              (merge_max["vrVolume_y"] > merge_max["vrVolume_x"] * 3)]
+
+    merge_max['pcVar_x'] = pd.to_numeric(merge_max['pcVar_x'], errors='coerce')
+    merge_max['pcVar_x'] = merge_max['pcVar_x'].apply(lambda x: x * 0.01)
+    merge_max['pcVar_x'] = merge_max['pcVar_x'].map('{:.2%}'.format)
+    merge_max['pcVar_y'] = pd.to_numeric(merge_max['pcVar_y'], errors='coerce')
+    merge_max['pcVar_y'] = merge_max['pcVar_y'].apply(lambda x: x * 0.01)
+    merge_max['pcVar_y'] = merge_max['pcVar_y'].map('{:.2%}'.format)
+
+    return merge_max
+
+
+def consulta_acao_formatada(df, cd_acao):
+    acao = consulta_acao(df, cd_acao)
+
+    acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
+    acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
+    acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
+    acao['pcMaxDia'] = pd.to_numeric(acao['pcMaxDia'], errors='coerce')
+    acao['pcMaxDia'] = acao['pcMaxDia'].apply(lambda x: x * 0.01)
+    acao['pcMaxDia'] = acao['pcMaxDia'].map('{:.2%}'.format)
+    acao['pcMinDia'] = pd.to_numeric(acao['pcMinDia'], errors='coerce')
+    acao['pcMinDia'] = acao['pcMinDia'].apply(lambda x: x * 0.01)
+    acao['pcMinDia'] = acao['pcMinDia'].map('{:.2%}'.format)
+    acao['pcAbert'] = pd.to_numeric(acao['pcAbert'], errors='coerce')
+    acao['pcAbert'] = acao['pcAbert'].apply(lambda x: x * 0.01)
+    acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
+
+    acao = acao.replace("nan%", 0)
+
+    return acao
