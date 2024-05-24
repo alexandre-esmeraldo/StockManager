@@ -8,7 +8,7 @@ def leitura_arquivos(periodo):
 
     DTEXCH, CODNEG, PREABE, PREMAX, PREMIN, PREULT, VOLTOT = ([] for i in range(7))
 
-    valores_codbdi = ['02', '07', '08', '34']
+    valores_codbdi = ['02', '07', '08', '12', '13', '14', '34', '35', '36', '58', '96']
 
     with ZipFile(arq_zip) as myzip:
         with myzip.open(arq_txt) as myfile:
