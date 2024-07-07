@@ -1,5 +1,6 @@
 from zipfile import ZipFile
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
 def leitura_arquivos(periodo):
@@ -112,21 +113,27 @@ def monta_df_periodos(df_origem, qt_dias):
     df_vol = busca_media(df_dias, "vrVolume", "vol")
     df_vr_fech = busca_media(df_dias, "vrFech", "vrFech")
     df_pc_abert = busca_media(df_dias, "pcAbert", "pcAbert")
+    df_pc_soma = df05["0.5%"] + df10["resultado"] + df15["resultado"] + df20["resultado"] + df25["resultado"] + df30[
+        "resultado"]
 
-    df05["1.0%"], df05["1.5%"], df05["2.0%"], df05["2.5%"], df05["3.0%"], df05["AvgVol"], df05["AvgVrFech"], df05[
-        "AvgPcAbert"] = [
-        df10["resultado"], df15["resultado"], df20["resultado"], df25["resultado"], df30["resultado"], df_vol["vol"],
-        df_vr_fech["vrFech"], df_pc_abert["pcAbert"]]
+    df05["1.0%"], df05["1.5%"], df05["2.0%"], df05["2.5%"], df05["3.0%"], df05["Soma"], df05["AvgVol"], df05[
+        "AvgVrFech"], df05["AvgPcAbert"] = [
+        df10["resultado"], df15["resultado"], df20["resultado"], df25["resultado"], df30["resultado"], df_pc_soma,
+        df_vol["vol"], df_vr_fech["vrFech"], df_pc_abert["pcAbert"]]
 
-    df_result = df05.reset_index(drop=True).sort_values(["1.0%", "1.5%", "2.0%", "2.5%", "3.0%"],
+    df_result = df05.reset_index(drop=True).sort_values(["Soma", "3.0%", "2.5%", "2.0%", "1.5%", "1.0%"],
                                                         ascending=False)
 
     return df_result
 
 
-def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech):
-    return df_n_dias.loc[
+def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech, bar):
+    dados = df_n_dias.loc[
         (df_n_dias["AvgVol"] > vol) & (df_n_dias[col_pc] >= pc_min) & (df_n_dias["AvgVrFech"] > avg_vr_fech)]
+
+    bar.value += 1
+
+    return dados
 
 
 def consulta_acao(df, cd_acao):
@@ -173,7 +180,7 @@ def filtra_data(df, data="max"):
     return df_max_dt
 
 
-def verifica_mudanca_vol(df, data="max"):
+def verifica_mudanca_vol(df, data="max", multiplier=3):
     # data = "2024-04-04"
     df_max_dt = filtra_data(df, data)
 
@@ -187,7 +194,7 @@ def verifica_mudanca_vol(df, data="max"):
     merge_max = pd.merge(df_2max_dt[['cdAcao', 'dtPregao', 'vrVolume', 'pcVar', 'vrFech']],
                          df_max_dt[['cdAcao', 'vrVolume', 'pcVar', 'vrFech', 'dtPregao']], how='inner', on=['cdAcao'])
     merge_max = merge_max.loc[(merge_max["vrVolume_x"] > 1000000) &
-                              (merge_max["vrVolume_y"] > merge_max["vrVolume_x"] * 3)]
+                              (merge_max["vrVolume_y"] > merge_max["vrVolume_x"] * multiplier)]
 
     merge_max['pcVar_x'] = pd.to_numeric(merge_max['pcVar_x'], errors='coerce')
     merge_max['pcVar_x'] = merge_max['pcVar_x'].apply(lambda x: x * 0.01)
@@ -218,3 +225,21 @@ def consulta_acao_formatada(df, cd_acao):
     acao = acao.replace("nan%", 0)
 
     return acao
+
+
+def gera_grafico(list_datas, count):
+    fig, ax = plt.subplots(1, figsize=(20, 3))
+    ax.grid()
+    fig.autofmt_xdate()
+    plt.plot(list(reversed(list_datas)), list(reversed(count)))
+    plt.show()
+
+
+def grandes_variacoes_volume(df):
+    vol_var = verifica_mudanca_vol(df, data="max", multiplier=5)
+    vol_var["pcVar_y"] = pd.to_numeric(vol_var["pcVar_y"].replace({"%": ""}, regex=True))
+    vol_var = vol_var.sort_values(["pcVar_y", "vrVolume_y"], ascending=False)
+    vol_var['pcVar_y'] = vol_var['pcVar_y'].apply(lambda x: x * 0.01)
+    vol_var['pcVar_y'] = vol_var['pcVar_y'].map('{:.2%}'.format)
+
+    return vol_var
