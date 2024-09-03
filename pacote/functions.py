@@ -51,7 +51,7 @@ def carrega_dados(arquivos):
         , ((df.vrAbert / df.vrFech.shift(1)) - 1) * 100
     ]
 
-    df["ic05"], df["ic10"], df["ic15"], df["ic20"], df["ic25"], df["ic30"] = [
+    df["i05"], df["i10"], df["i15"], df["i20"], df["i25"], df["i30"] = [
         df.apply(condicao05, axis=1)
         , df.apply(condicao10, axis=1)
         , df.apply(condicao15, axis=1)
