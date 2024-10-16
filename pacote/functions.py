@@ -1,6 +1,8 @@
 from zipfile import ZipFile
 import pandas as pd
 import matplotlib.pyplot as plt
+from bs4 import BeautifulSoup
+from datetime import datetime
 
 
 def leitura_arquivos(periodo):
@@ -243,3 +245,51 @@ def grandes_variacoes_volume(df):
     vol_var['pcVar_y'] = vol_var['pcVar_y'].map('{:.2%}'.format)
 
     return vol_var
+
+
+def busca_ativos_dividendos():
+    file = "agenda_dividendos_clean.html"
+
+    with open(file) as f:
+        dados = f.read()
+
+    soup = BeautifulSoup(dados, 'html.parser')
+
+    dict_meses = {
+        'Janeiro': '01',
+        'Fevereiro': '02',
+        'MarÃ§o': '03',
+        'Abril': '04',
+        'Maio': '05',
+        'Junho': '06',
+        'Julho': '07',
+        'Agosto': '08',
+        'Setembro': '09',
+        'Outubro': '10',
+        'Novembro': '11',
+        'Dezembro': '12'
+    }
+
+    list_month_group_payment = soup.find_all(attrs={'class': 'month-group-payment'})
+
+    hoje = datetime.today()
+    dic_dividendos = {}
+    lista_retorno = []
+    for month_group in list_month_group_payment:
+        dia = month_group.find(attrs={'class': 'payment-day'}).text
+        mes = month_group.find(attrs={'class': 'text-center'}).text
+        if len(month_group.find_all('h3')) > 0:
+            ano = month_group.find_all('h3')[0].contents[0][-5:-1]
+
+        data = datetime.strptime(f'{dia}-{dict_meses[mes]}-{ano}', '%d-%m-%Y')
+
+        i = 0
+        dic_dividendos[data] = []
+        for ativo in month_group.find_all('p'):
+            if (i % 3) == 0:
+                dic_dividendos[data].append(ativo.text)
+                if data.strftime('%Y-%m-%d') == hoje.strftime('%Y-%m-%d'):
+                    lista_retorno.append(ativo.text)
+            i += 1
+
+    return lista_retorno
