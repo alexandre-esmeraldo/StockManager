@@ -248,9 +248,9 @@ def grandes_variacoes_volume(df):
 
 
 def busca_ativos_dividendos():
-    file = "agenda_dividendos_clean.html"
+    file = "agenda_dividendos.html"
 
-    with open(file) as f:
+    with open(file, encoding="utf8") as f:
         dados = f.read()
 
     soup = BeautifulSoup(dados, 'html.parser')
@@ -258,7 +258,7 @@ def busca_ativos_dividendos():
     dict_meses = {
         'Janeiro': '01',
         'Fevereiro': '02',
-        'MarÃ§o': '03',
+        'Março': '03',
         'Abril': '04',
         'Maio': '05',
         'Junho': '06',
@@ -274,7 +274,7 @@ def busca_ativos_dividendos():
 
     hoje = datetime.today()
     dic_dividendos = {}
-    lista_retorno = []
+    set_retorno = {'inicial'}
     for month_group in list_month_group_payment:
         dia = month_group.find(attrs={'class': 'payment-day'}).text
         mes = month_group.find(attrs={'class': 'text-center'}).text
@@ -289,7 +289,8 @@ def busca_ativos_dividendos():
             if (i % 3) == 0:
                 dic_dividendos[data].append(ativo.text)
                 if data.strftime('%Y-%m-%d') == hoje.strftime('%Y-%m-%d'):
-                    lista_retorno.append(ativo.text)
+                    set_retorno.add(ativo.text)
             i += 1
 
-    return lista_retorno
+    set_retorno.remove('inicial')
+    return set_retorno
