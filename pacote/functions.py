@@ -208,23 +208,48 @@ def verifica_mudanca_vol(df, data="max", multiplier=3):
     return merge_max
 
 
+def set_bold(val):
+    return "font-weight: bold"
+
+
+def color_negative_red(val):
+    color = 'red' if val < 0 else 'green'
+    return 'color: %s' % color
+
+
 def consulta_acao_formatada(df, cd_acao):
     acao = consulta_acao(df, cd_acao)
 
     acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
-    acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
+#     acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
     acao['pcMaxDia'] = pd.to_numeric(acao['pcMaxDia'], errors='coerce')
     acao['pcMaxDia'] = acao['pcMaxDia'].apply(lambda x: x * 0.01)
-    acao['pcMaxDia'] = acao['pcMaxDia'].map('{:.2%}'.format)
+    # acao['pcMaxDia'] = acao['pcMaxDia'].map('{:.2%}'.format)
     acao['pcMinDia'] = pd.to_numeric(acao['pcMinDia'], errors='coerce')
     acao['pcMinDia'] = acao['pcMinDia'].apply(lambda x: x * 0.01)
-    acao['pcMinDia'] = acao['pcMinDia'].map('{:.2%}'.format)
+    # acao['pcMinDia'] = acao['pcMinDia'].map('{:.2%}'.format)
     acao['pcAbert'] = pd.to_numeric(acao['pcAbert'], errors='coerce')
     acao['pcAbert'] = acao['pcAbert'].apply(lambda x: x * 0.01)
-    acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
+    # acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
 
     acao = acao.replace("nan%", 0)
+    acao['dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
+    acao = (acao.style.applymap(set_bold, subset=['vrFech', 'pcVar'])
+                      .applymap(color_negative_red, subset=['pcVar', 'pcMaxDia', 'pcMinDia', 'pcAbert'])
+                      .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
+            )
+    acao = acao.format(
+        {
+            "vrFech": "{:,.2f}".format,
+            "vrMaxDia": "{:,.2f}".format,
+            "vrMinDia": "{:,.2f}".format,
+            "vrAbert": "{:,.2f}".format,
+            "pcVar": "{:,.2%}".format,
+            "pcMaxDia": "{:,.2%}".format,
+            "pcMinDia": "{:,.2%}".format,
+            "pcAbert": "{:,.2%}".format
+        })
 
     return acao
 
@@ -244,7 +269,7 @@ def grandes_variacoes_volume(df):
     vol_var['pcVar_y'] = vol_var['pcVar_y'].apply(lambda x: x * 0.01)
     vol_var['pcVar_y'] = vol_var['pcVar_y'].map('{:.2%}'.format)
 
-    return vol_var
+    return vol_var if not vol_var.empty else '<< Sem ações com Grandes Variações de Volume >>'
 
 
 def busca_ativos_dividendos():
