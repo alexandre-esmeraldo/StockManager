@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from datetime import datetime
+import re
 
 
 def leitura_arquivos(periodo):
@@ -26,7 +27,7 @@ def leitura_arquivos(periodo):
                     VOLTOT.append(int(line.decode('utf-8')[170:188]) / 100)
 
     df_origem = pd.DataFrame(
-        {"cdAcao": CODNEG
+        {"Acao": CODNEG
             , "dtPregao": pd.to_datetime(DTEXCH, format="%Y%m%d", errors="ignore")
             , "vrFech": PREULT
             , "vrVolume": VOLTOT
@@ -44,7 +45,7 @@ def carrega_dados(arquivos):
     for i in range(1, len(arquivos)):
         df = pd.concat([df, leitura_arquivos(arquivos[i])])
 
-    df = df.sort_values(["cdAcao", "dtPregao"], ascending=True)
+    df = df.sort_values(["Acao", "dtPregao"], ascending=True)
 
     df["pcVar"], df["pcMaxDia"], df["pcMinDia"], df["pcAbert"] = [
         ((df.vrFech / df.vrFech.shift(1)) - 1) * 100
@@ -53,7 +54,7 @@ def carrega_dados(arquivos):
         , ((df.vrAbert / df.vrFech.shift(1)) - 1) * 100
     ]
 
-    df["i05"], df["i10"], df["i15"], df["i20"], df["i25"], df["i30"] = [
+    df["05"], df["10"], df["15"], df["20"], df["25"], df["30"] = [
         df.apply(condicao05, axis=1)
         , df.apply(condicao10, axis=1)
         , df.apply(condicao15, axis=1)
@@ -92,15 +93,15 @@ def condicao30(df_tmp):
 def busca_periodos(df, qt_dias):
     return df.loc[
         df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias - 1])].sort_values(
-        ["cdAcao", "dtPregao"], ascending=False)
+        ["Acao", "dtPregao"], ascending=False)
 
 
 def somatorio_pc_max_dia(df_ent, pc, index_name):
-    return df_ent.groupby("cdAcao")["pcMaxDia"].apply(lambda x: (x > pc).sum()).reset_index(name=index_name)
+    return df_ent.groupby("Acao")["pcMaxDia"].apply(lambda x: (x > pc).sum()).reset_index(name=index_name)
 
 
 def busca_media(df_ent, coluna, index_name):
-    return df_ent.groupby("cdAcao")[coluna].agg("mean").reset_index(name=index_name)
+    return df_ent.groupby("Acao")[coluna].agg("mean").reset_index(name=index_name)
 
 
 def monta_df_periodos(df_origem, qt_dias):
@@ -141,7 +142,7 @@ def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech, bar):
 def consulta_acao(df, cd_acao):
     df_out = df.copy()
     df_out['vrVolume'] = df['vrVolume'].map('{:,.0f}'.format)
-    return df_out.loc[(df_out["cdAcao"] == cd_acao.upper())].replace(0, "").sort_values(["dtPregao"], ascending=False)
+    return df_out.loc[(df_out["Acao"] == cd_acao.upper())].replace(0, "").sort_values(["dtPregao"], ascending=False)
 
 
 def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
@@ -156,9 +157,9 @@ def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
 
     dt_min = df_n_dias["dtPregao"].min()
     print('\033[94m' + '\033[1m' + f"{dt_min:%Y-%m-%d}" + " >> " + f"{dt_max:%Y-%m-%d}")
-    df_dt_min = df_n_dias.loc[(df_n_dias["dtPregao"] == dt_min)].set_index(["cdAcao"])
-    df_dt_max = df_n_dias.loc[(df_n_dias["dtPregao"] == dt_max)].set_index(["cdAcao"])
-    df_avg_vol = busca_media(df_n_dias, "vrVolume", "vol").set_index(["cdAcao"])
+    df_dt_min = df_n_dias.loc[(df_n_dias["dtPregao"] == dt_min)].set_index(["Acao"])
+    df_dt_max = df_n_dias.loc[(df_n_dias["dtPregao"] == dt_max)].set_index(["Acao"])
+    df_avg_vol = busca_media(df_n_dias, "vrVolume", "vol").set_index(["Acao"])
 
     df_pc_n_dias = pd.DataFrame({
         "dtInicio": df_dt_min["dtPregao"], "dtFim": df_dt_max["dtPregao"]
@@ -190,11 +191,11 @@ def verifica_mudanca_vol(df, data="max", multiplier=3):
     df_2max_dt = df_2max_dt.loc[df_2max_dt["dtPregao"] < df_max_dt.iloc[0, 1]]
     df_2max_dt = filtra_data(df_2max_dt)
 
-    df_max_dt = df_max_dt[["cdAcao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
-    df_2max_dt = df_2max_dt[["cdAcao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
+    df_max_dt = df_max_dt[["Acao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
+    df_2max_dt = df_2max_dt[["Acao", "vrVolume", "pcVar", "dtPregao", "vrFech"]]
 
-    merge_max = pd.merge(df_2max_dt[['cdAcao', 'dtPregao', 'vrVolume', 'pcVar', 'vrFech']],
-                         df_max_dt[['cdAcao', 'vrVolume', 'pcVar', 'vrFech', 'dtPregao']], how='inner', on=['cdAcao'])
+    merge_max = pd.merge(df_2max_dt[['Acao', 'dtPregao', 'vrVolume', 'pcVar', 'vrFech']],
+                         df_max_dt[['Acao', 'vrVolume', 'pcVar', 'vrFech', 'dtPregao']], how='inner', on=['Acao'])
     merge_max = merge_max.loc[(merge_max["vrVolume_x"] > 1000000) &
                               (merge_max["vrVolume_y"] > merge_max["vrVolume_x"] * multiplier)]
 
@@ -218,11 +219,11 @@ def color_negative_red(val):
 
 
 def consulta_acao_formatada(df, cd_acao):
-    acao = consulta_acao(df, cd_acao)
+    acao = consulta_acao(df, cd_acao)[:-1]
 
     acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
-#     acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
+    #     acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
     acao['pcMaxDia'] = pd.to_numeric(acao['pcMaxDia'], errors='coerce')
     acao['pcMaxDia'] = acao['pcMaxDia'].apply(lambda x: x * 0.01)
     # acao['pcMaxDia'] = acao['pcMaxDia'].map('{:.2%}'.format)
@@ -236,8 +237,8 @@ def consulta_acao_formatada(df, cd_acao):
     acao = acao.replace("nan%", 0)
     acao['dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
     acao = (acao.style.applymap(set_bold, subset=['vrFech', 'pcVar'])
-                      .applymap(color_negative_red, subset=['pcVar', 'pcMaxDia', 'pcMinDia', 'pcAbert'])
-                      .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
+            .applymap(color_negative_red, subset=['pcVar', 'pcMaxDia', 'pcMinDia', 'pcAbert'])
+            .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
             )
     acao = acao.format(
         {
@@ -300,11 +301,13 @@ def busca_ativos_dividendos():
     hoje = datetime.today()
     dic_dividendos = {}
     set_retorno = {'inicial'}
+    padrao_regex_ano = r'\b\d{4}\b'
     for month_group in list_month_group_payment:
         dia = month_group.find(attrs={'class': 'payment-day'}).text
         mes = month_group.find(attrs={'class': 'text-center'}).text
         if len(month_group.find_all('h3')) > 0:
-            ano = month_group.find_all('h3')[0].contents[0][-5:-1]
+            # ano = month_group.find_all('h3')[0].contents[0][-5:-1]
+            ano = re.findall(padrao_regex_ano, month_group.find_all('h3')[0].contents[0])[0]
 
         data = datetime.strptime(f'{dia}-{dict_meses[mes]}-{ano}', '%d-%m-%Y')
 
