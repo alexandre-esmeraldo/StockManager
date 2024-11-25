@@ -31,8 +31,8 @@ def leitura_arquivos(periodo):
             , "dtPregao": pd.to_datetime(DTEXCH, format="%Y%m%d", errors="ignore")
             , "vrFech": PREULT
             , "vrVolume": VOLTOT
-            , "vrMaxDia": PREMAX
-            , "vrMinDia": PREMIN
+            , "vrMax": PREMAX
+            , "vrMin": PREMIN
             , "vrAbert": PREABE
          }
     )
@@ -47,10 +47,10 @@ def carrega_dados(arquivos):
 
     df = df.sort_values(["Acao", "dtPregao"], ascending=True)
 
-    df["pcVar"], df["pcMaxDia"], df["pcMinDia"], df["pcAbert"] = [
+    df["pcVar"], df["pcMax"], df["pcMin"], df["pcAbert"] = [
         ((df.vrFech / df.vrFech.shift(1)) - 1) * 100
-        , ((df.vrMaxDia / df.vrFech.shift(1)) - 1) * 100
-        , ((df.vrMinDia / df.vrFech.shift(1)) - 1) * 100
+        , ((df.vrMax / df.vrFech.shift(1)) - 1) * 100
+        , ((df.vrMin / df.vrFech.shift(1)) - 1) * 100
         , ((df.vrAbert / df.vrFech.shift(1)) - 1) * 100
     ]
 
@@ -67,27 +67,27 @@ def carrega_dados(arquivos):
 
 
 def condicao05(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 0.5) else 0
+    return 1 if (df_tmp["pcMax"] > 0.5) else 0
 
 
 def condicao10(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 1) else 0
+    return 1 if (df_tmp["pcMax"] > 1) else 0
 
 
 def condicao15(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 1.5) else 0
+    return 1 if (df_tmp["pcMax"] > 1.5) else 0
 
 
 def condicao20(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 2) else 0
+    return 1 if (df_tmp["pcMax"] > 2) else 0
 
 
 def condicao25(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 2.5) else 0
+    return 1 if (df_tmp["pcMax"] > 2.5) else 0
 
 
 def condicao30(df_tmp):
-    return 1 if (df_tmp["pcMaxDia"] > 3) else 0
+    return 1 if (df_tmp["pcMax"] > 3) else 0
 
 
 def busca_periodos(df, qt_dias):
@@ -97,7 +97,7 @@ def busca_periodos(df, qt_dias):
 
 
 def somatorio_pc_max_dia(df_ent, pc, index_name):
-    return df_ent.groupby("Acao")["pcMaxDia"].apply(lambda x: (x > pc).sum()).reset_index(name=index_name)
+    return df_ent.groupby("Acao")["pcMax"].apply(lambda x: (x > pc).sum()).reset_index(name=index_name)
 
 
 def busca_media(df_ent, coluna, index_name):
@@ -224,12 +224,12 @@ def consulta_acao_formatada(df, cd_acao):
     acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
     #     acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
-    acao['pcMaxDia'] = pd.to_numeric(acao['pcMaxDia'], errors='coerce')
-    acao['pcMaxDia'] = acao['pcMaxDia'].apply(lambda x: x * 0.01)
-    # acao['pcMaxDia'] = acao['pcMaxDia'].map('{:.2%}'.format)
-    acao['pcMinDia'] = pd.to_numeric(acao['pcMinDia'], errors='coerce')
-    acao['pcMinDia'] = acao['pcMinDia'].apply(lambda x: x * 0.01)
-    # acao['pcMinDia'] = acao['pcMinDia'].map('{:.2%}'.format)
+    acao['pcMax'] = pd.to_numeric(acao['pcMax'], errors='coerce')
+    acao['pcMax'] = acao['pcMax'].apply(lambda x: x * 0.01)
+    # acao['pcMax'] = acao['pcMax'].map('{:.2%}'.format)
+    acao['pcMin'] = pd.to_numeric(acao['pcMin'], errors='coerce')
+    acao['pcMin'] = acao['pcMin'].apply(lambda x: x * 0.01)
+    # acao['pcMin'] = acao['pcMin'].map('{:.2%}'.format)
     acao['pcAbert'] = pd.to_numeric(acao['pcAbert'], errors='coerce')
     acao['pcAbert'] = acao['pcAbert'].apply(lambda x: x * 0.01)
     # acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
@@ -237,18 +237,18 @@ def consulta_acao_formatada(df, cd_acao):
     acao = acao.replace("nan%", 0)
     acao['dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
     acao = (acao.style.applymap(set_bold, subset=['vrFech', 'pcVar'])
-            .applymap(color_negative_red, subset=['pcVar', 'pcMaxDia', 'pcMinDia', 'pcAbert'])
+            .applymap(color_negative_red, subset=['pcVar', 'pcMax', 'pcMin', 'pcAbert'])
             .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
             )
     acao = acao.format(
         {
             "vrFech": "{:,.2f}".format,
-            "vrMaxDia": "{:,.2f}".format,
-            "vrMinDia": "{:,.2f}".format,
+            "vrMax": "{:,.2f}".format,
+            "vrMin": "{:,.2f}".format,
             "vrAbert": "{:,.2f}".format,
             "pcVar": "{:,.2%}".format,
-            "pcMaxDia": "{:,.2%}".format,
-            "pcMinDia": "{:,.2%}".format,
+            "pcMax": "{:,.2%}".format,
+            "pcMin": "{:,.2%}".format,
             "pcAbert": "{:,.2%}".format
         })
 
