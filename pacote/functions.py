@@ -54,13 +54,15 @@ def carrega_dados(arquivos):
         , ((df.vrAbert / df.vrFech.shift(1)) - 1) * 100
     ]
 
-    df["05"], df["10"], df["15"], df["20"], df["25"], df["30"] = [
+    df["05"], df["10"], df["15"], df["20"], df["25"], df["30"], df["35"], df["40"] = [
         df.apply(condicao05, axis=1)
         , df.apply(condicao10, axis=1)
         , df.apply(condicao15, axis=1)
         , df.apply(condicao20, axis=1)
         , df.apply(condicao25, axis=1)
         , df.apply(condicao30, axis=1)
+        , df.apply(condicao35, axis=1)
+        , df.apply(condicao40, axis=1)
     ]
 
     return df
@@ -90,6 +92,14 @@ def condicao30(df_tmp):
     return 1 if (df_tmp["pcMax"] > 3) else 0
 
 
+def condicao35(df_tmp):
+    return 1 if (df_tmp["pcMax"] > 3.5) else 0
+
+
+def condicao40(df_tmp):
+    return 1 if (df_tmp["pcMax"] > 4) else 0
+
+
 def busca_periodos(df, qt_dias):
     return df.loc[
         df["dtPregao"] >= (df.dtPregao.drop_duplicates().sort_values(ascending=False).iloc[qt_dias - 1])].sort_values(
@@ -113,19 +123,22 @@ def monta_df_periodos(df_origem, qt_dias):
     df20 = somatorio_pc_max_dia(df_dias, 2.0, "resultado")
     df25 = somatorio_pc_max_dia(df_dias, 2.5, "resultado")
     df30 = somatorio_pc_max_dia(df_dias, 3.0, "resultado")
+    df35 = somatorio_pc_max_dia(df_dias, 3.5, "resultado")
+    df40 = somatorio_pc_max_dia(df_dias, 4.0, "resultado")
     df_vol = busca_media(df_dias, "vrVolume", "vol")
     df_vr_fech = busca_media(df_dias, "vrFech", "vrFech")
     df_pc_abert = busca_media(df_dias, "pcAbert", "pcAbert")
     df_pc_soma = df05["0.5%"] + df10["resultado"] + df15["resultado"] + df20["resultado"] + df25["resultado"] + df30[
-        "resultado"]
+        "resultado"] + df35["resultado"] + df40["resultado"]
 
-    df05["1.0%"], df05["1.5%"], df05["2.0%"], df05["2.5%"], df05["3.0%"], df05["Soma"], df05["AvgVol"], df05[
-        "AvgVrFech"], df05["AvgPcAbert"] = [
-        df10["resultado"], df15["resultado"], df20["resultado"], df25["resultado"], df30["resultado"], df_pc_soma,
-        df_vol["vol"], df_vr_fech["vrFech"], df_pc_abert["pcAbert"]]
+    df05["1.0%"], df05["1.5%"], df05["2.0%"], df05["2.5%"], df05["3.0%"], df05["3.5%"], df05["4.0%"], df05[
+        "Soma"], df05["AvgVol"], df05["AvgVrFech"], df05["AvgPcAbert"] = [
+        df10["resultado"], df15["resultado"], df20["resultado"], df25["resultado"], df30["resultado"],
+        df35["resultado"], df40["resultado"], df_pc_soma, df_vol["vol"], df_vr_fech["vrFech"], df_pc_abert["pcAbert"]]
 
-    df_result = df05.reset_index(drop=True).sort_values(["Soma", "3.0%", "2.5%", "2.0%", "1.5%", "1.0%"],
-                                                        ascending=False)
+    df_result = df05.reset_index(drop=True).sort_values(
+        ["Soma", "4.0%", "3.5%", "3.0%", "2.5%", "2.0%", "1.5%", "1.0%"],
+        ascending=False)
 
     return df_result
 
@@ -274,7 +287,7 @@ def grandes_variacoes_volume(df):
 
 
 def busca_ativos_dividendos():
-    file = "agenda_dividendos.html"
+    file = "arquivos/agenda_dividendos.html"
 
     with open(file, encoding="utf8") as f:
         dados = f.read()
