@@ -231,8 +231,9 @@ def color_negative_red(val):
     return 'color: %s' % color
 
 
-def consulta_acao_formatada(df, cd_acao):
-    acao = consulta_acao(df, cd_acao)[:-1]
+def consulta_acao_formatada(df, cd_acao, limite=1000):
+    acao_temp = consulta_acao(df, cd_acao)[0:limite]
+    acao = acao_temp[:-1] if len(acao_temp) > 30 else acao_temp
 
     acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
@@ -268,11 +269,14 @@ def consulta_acao_formatada(df, cd_acao):
     return acao
 
 
-def gera_grafico(list_datas, count):
+def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" "):
     fig, ax = plt.subplots(1, figsize=(20, 3))
     ax.grid()
     fig.autofmt_xdate()
-    plt.plot(list(reversed(list_datas)), list(reversed(count)))
+    plt.plot(list(reversed(list_datas)), list(reversed(count1)), label=label1)
+    if count2:
+        plt.plot(list(reversed(list_datas)), list(reversed(count2)), label=label2)
+    plt.legend()
     plt.show()
 
 
