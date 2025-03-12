@@ -235,21 +235,21 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
     acao_temp = consulta_acao(df, cd_acao)[0:limite]
     acao = acao_temp[:-1] if len(acao_temp) > 30 else acao_temp
 
-    acao['pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
-    acao['pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
+    acao.loc[:, 'pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
+    acao.loc[:, 'pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
     #     acao['pcVar'] = acao['pcVar'].map('{:.2%}'.format)
-    acao['pcMax'] = pd.to_numeric(acao['pcMax'], errors='coerce')
-    acao['pcMax'] = acao['pcMax'].apply(lambda x: x * 0.01)
+    acao.loc[:, 'pcMax'] = pd.to_numeric(acao['pcMax'], errors='coerce')
+    acao.loc[:, 'pcMax'] = acao['pcMax'].apply(lambda x: x * 0.01)
     # acao['pcMax'] = acao['pcMax'].map('{:.2%}'.format)
-    acao['pcMin'] = pd.to_numeric(acao['pcMin'], errors='coerce')
-    acao['pcMin'] = acao['pcMin'].apply(lambda x: x * 0.01)
+    acao.loc[:, 'pcMin'] = pd.to_numeric(acao['pcMin'], errors='coerce')
+    acao.loc[:, 'pcMin'] = acao['pcMin'].apply(lambda x: x * 0.01)
     # acao['pcMin'] = acao['pcMin'].map('{:.2%}'.format)
-    acao['pcAbert'] = pd.to_numeric(acao['pcAbert'], errors='coerce')
-    acao['pcAbert'] = acao['pcAbert'].apply(lambda x: x * 0.01)
+    acao.loc[:, 'pcAbert'] = pd.to_numeric(acao['pcAbert'], errors='coerce')
+    acao.loc[:, 'pcAbert'] = acao['pcAbert'].apply(lambda x: x * 0.01)
     # acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
 
     acao = acao.replace("nan%", 0)
-    acao['dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
+    acao.loc[:, 'dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
     acao = (acao.style.applymap(set_bold, subset=['vrFech', 'pcVar'])
             .applymap(color_negative_red, subset=['pcVar', 'pcMax', 'pcMin', 'pcAbert'])
             .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
@@ -290,7 +290,7 @@ def grandes_variacoes_volume(df):
     return vol_var if not vol_var.empty else '<< Sem ações com Grandes Variações de Volume >>'
 
 
-def busca_ativos_dividendos():
+def busca_ativos_dividendos_old():
     file = "arquivos/agenda_dividendos.html"
 
     with open(file, encoding="utf8") as f:
@@ -339,3 +339,26 @@ def busca_ativos_dividendos():
 
     set_retorno.remove('inicial')
     return set_retorno
+
+
+def busca_ativos_dividendos():
+    file = f"arquivos/dividendos_{datetime.today().strftime('%Y%m')}.txt"
+    dic_dt_com = {}
+    hoje = datetime.today().strftime('%Y-%m-%d')
+
+    with open(file, encoding="utf8") as f:
+        dados = f.read()
+        
+    soup = BeautifulSoup(dados, 'html.parser')
+
+    list_ = soup.find_all(attrs={'class': 'hover:bg-gray-50'})
+
+    for acao in list_:
+        acao_ticker = acao.find_all('div', class_="ticker-name")[0].text
+        data_com = acao.find_all('span', class_="table-field")[0].text
+        data = datetime.strptime(data_com, "%d/%m/%y").strftime('%Y-%m-%d')
+        if data not in dic_dt_com:
+            dic_dt_com[data] = []
+        dic_dt_com[data].append(acao_ticker)
+
+    return(dic_dt_com[data]) if hoje in dic_dt_com else []
