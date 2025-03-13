@@ -342,7 +342,10 @@ def busca_ativos_dividendos_old():
 
 
 def busca_ativos_dividendos():
+    # https://investidor10.com.br/acoes/dividendos/2025/marco/
     file = f"arquivos/dividendos_{datetime.today().strftime('%Y%m')}.txt"
+    file_rst = "arquivos/resultados_4t24.txt"
+
     dic_dt_com = {}
     hoje = datetime.today().strftime('%Y-%m-%d')
 
@@ -361,4 +364,23 @@ def busca_ativos_dividendos():
             dic_dt_com[data] = []
         dic_dt_com[data].append(acao_ticker)
 
-    return(dic_dt_com[data]) if hoje in dic_dt_com else []
+    # https://www.moneytimes.com.br/calendario-de-resultados-do-4t24-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
+    with open(file_rst, encoding="utf8") as f:
+        dados_rst = f.read()
+        
+    soup_rst = BeautifulSoup(dados_rst, 'html.parser')
+    
+    list_rst = soup_rst.find_all('tr')
+    del list_rst[0]
+    
+    for ticker in list_rst:
+        acao_rst = ticker.find_all('td')[1].text
+        data_rst = datetime.strptime(ticker.find_all('td')[2].text, "%d/%m/%Y").strftime('%Y-%m-%d')
+        hr_divlg_rst = ticker.find_all('td')[3].text
+        
+        if data_rst == hoje:
+            dic_dt_com[data_rst].append(acao_rst)
+
+    set_ = set(dic_dt_com[hoje]) if hoje in dic_dt_com else ()
+
+    return set_
