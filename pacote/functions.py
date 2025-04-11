@@ -233,7 +233,7 @@ def color_negative_red(val):
 
 def consulta_acao_formatada(df, cd_acao, limite=1000):
     acao_temp = consulta_acao(df, cd_acao)[0:limite]
-    acao = acao_temp[:-1] if len(acao_temp) > 30 else acao_temp
+    acao = acao_temp[:-1].copy() if len(acao_temp) > 30 else acao_temp.copy()
 
     acao.loc[:, 'pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao.loc[:, 'pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
@@ -269,14 +269,19 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
     return acao
 
 
-def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" "):
-    fig, ax = plt.subplots(1, figsize=(20, 3))
+def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" ", count3="", label3=" ", title=" ", set_lim="", figb=3):
+    fig, ax = plt.subplots(1, figsize=(20, figb))
+    if set_lim:
+        ax.set_ylim(-30, 30)
     ax.grid()
     fig.autofmt_xdate()
-    plt.plot(list(reversed(list_datas)), list(reversed(count1)), label=label1)
+    plt.plot(list(reversed(list_datas)), list(reversed(count1)), label=label1, color="green")
     if count2:
-        plt.plot(list(reversed(list_datas)), list(reversed(count2)), label=label2)
+        plt.plot(list(reversed(list_datas)), list(reversed(count2)), label=label2, color="black")
+    if count3:
+        plt.plot(list(reversed(list_datas)), list(reversed(count3)), label=label3, color="red")
     plt.legend()
+    plt.title(title.upper(), fontsize=20)
     plt.show()
 
 
@@ -379,6 +384,8 @@ def busca_ativos_dividendos():
         hr_divlg_rst = ticker.find_all('td')[3].text
         
         if data_rst == hoje:
+            if data_rst not in dic_dt_com:
+                dic_dt_com[data_rst] = []
             dic_dt_com[data_rst].append(acao_rst)
 
     set_ = set(dic_dt_com[hoje]) if hoje in dic_dt_com else ()
