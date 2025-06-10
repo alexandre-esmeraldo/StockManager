@@ -349,7 +349,7 @@ def busca_ativos_dividendos_old():
 def busca_ativos_dividendos():
     # https://investidor10.com.br/acoes/dividendos/2025/marco/
     file = f"arquivos/dividendos_{datetime.today().strftime('%Y%m')}.txt"
-    file_rst = "arquivos/resultados_4t24.txt"
+    file_rst = "arquivos/resultados_1t25.txt"
 
     dic_dt_com = {}
     hoje = datetime.today().strftime('%Y-%m-%d')
@@ -369,7 +369,7 @@ def busca_ativos_dividendos():
             dic_dt_com[data] = []
         dic_dt_com[data].append(acao_ticker)
 
-    # https://www.moneytimes.com.br/calendario-de-resultados-do-4t24-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
+    # https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
     with open(file_rst, encoding="utf8") as f:
         dados_rst = f.read()
         
@@ -380,7 +380,7 @@ def busca_ativos_dividendos():
     
     for ticker in list_rst:
         acao_rst = ticker.find_all('td')[1].text
-        data_rst = datetime.strptime(ticker.find_all('td')[2].text, "%d/%m/%Y").strftime('%Y-%m-%d')
+        data_rst = datetime.strptime(ticker.find_all('td')[2].text[:10], "%d/%m/%Y").strftime('%Y-%m-%d')
         hr_divlg_rst = ticker.find_all('td')[3].text
         
         if data_rst == hoje:
