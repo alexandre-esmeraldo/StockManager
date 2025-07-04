@@ -1,8 +1,8 @@
 # StockManager
 
-Olá, bem-vindo.
+Olá, seja bem-vindo.
 
-Esse é um modelo analítico que analisa o histórico de comportamento de ações da Bovespa na tentativa de prever qual ação tem maior probabilidade de atingir 1% de valorização no pregão seguinte, baseado no valor de fechamento.
+Esse é um modelo analítico que analisa o histórico de comportamento de ações da B3 na tentativa de prever qual ação tem maior probabilidade de atingir 1% de valorização no pregão seguinte, baseado no valor de fechamento.
 
 É necessário fazer download do arquivo de séries históricas da B3 para a pasta arquivos/. Os dados de dois meses é suficiente, e geralmente apenas o arquivo anual atende.
 
