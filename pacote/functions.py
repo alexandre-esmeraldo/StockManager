@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
 from datetime import datetime
 import re
+import locale
+from selenium import webdriver
 
 
 def leitura_arquivos(periodo):
@@ -347,16 +349,36 @@ def busca_ativos_dividendos_old():
 
 
 def busca_ativos_dividendos():
+    """
+    Busca ativos que possuem dividendos com 'data com' na data atual, e ativos que divulgam seus balanços na data atual.
+
+    Returns:
+        set: Um conjunto contendo os códigos desses ativos.
+    """
+
     # https://investidor10.com.br/acoes/dividendos/2025/marco/
     file = f"arquivos/dividendos_{datetime.today().strftime('%Y%m')}.txt"
     file_rst = "arquivos/resultados_1t25.txt"
 
     dic_dt_com = {}
     hoje = datetime.today().strftime('%Y-%m-%d')
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
-    with open(file, encoding="utf8") as f:
-        dados = f.read()
-        
+    try:
+        # with open(file, encoding="utf8") as f:
+        #     dados = f.read()
+        dados = web_scraping(f"https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
+        print(f"https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
+
+    except Exception as e:
+        print(e)
+        print(f"Download https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
+        print("Iniciando tentativa com requests")
+
+        import requests
+        dados = requests.get("https://investidor10.com.br/acoes/dividendos/2025/julho/").content
+
+            
     soup = BeautifulSoup(dados, 'html.parser')
 
     list_ = soup.find_all(attrs={'class': 'hover:bg-gray-50'})
@@ -391,3 +413,21 @@ def busca_ativos_dividendos():
     set_ = set(dic_dt_com[hoje]) if hoje in dic_dt_com else ()
 
     return set_
+
+def web_scraping(url):
+    # initialize an instance of the chrome driver (browser)
+    cService = webdriver.ChromeService(executable_path='C:/temp/chromedriver-win64/chromedriver.exe')
+    driver = webdriver.Chrome(service = cService)
+    # driver = webdriver.Chrome()
+
+    # visit your target site
+    # driver.get("https://br.investing.com/earnings-calendar/")
+    driver.get(url)
+
+    # output the full-page HTML
+    codigo_fonte = driver.page_source
+
+    # release the resources allocated by Selenium and shut down the browser
+    driver.quit()
+
+    return codigo_fonte
