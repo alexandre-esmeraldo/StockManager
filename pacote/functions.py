@@ -8,6 +8,8 @@ import locale
 from selenium import webdriver
 
 
+hoje = datetime.today()
+
 def leitura_arquivos(periodo):
     arq_zip = 'arquivos/COTAHIST_' + periodo + '.ZIP'
     arq_txt = 'COTAHIST_' + periodo + '.TXT'
@@ -251,7 +253,8 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
     # acao['pcAbert'] = acao['pcAbert'].map('{:.2%}'.format)
 
     acao = acao.replace("nan%", 0)
-    acao.loc[:, 'dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
+    # acao.loc[:, 'dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
+    acao['dtPregao'] = acao['dtPregao'].dt.strftime('%Y-%m-%d')
     acao = (acao.style.applymap(set_bold, subset=['vrFech', 'pcVar'])
             .applymap(color_negative_red, subset=['pcVar', 'pcMax', 'pcMin', 'pcAbert'])
             .applymap(lambda x: 'color: transparent' if pd.isnull(x) else '')
@@ -271,7 +274,8 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
     return acao
 
 
-def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" ", count3="", label3=" ", title=" ", set_lim="", figb=3):
+def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" ", count3="", label3=" ", title=" ", set_lim="",
+                 figb=3):
     fig, ax = plt.subplots(1, figsize=(20, figb))
     if set_lim:
         ax.set_ylim(-30, 30)
@@ -322,7 +326,6 @@ def busca_ativos_dividendos_old():
 
     list_month_group_payment = soup.find_all(attrs={'class': 'month-group-payment'})
 
-    hoje = datetime.today()
     dic_dividendos = {}
     set_retorno = {'inicial'}
     padrao_regex_ano = r'\b\d{4}\b'
@@ -357,28 +360,30 @@ def busca_ativos_dividendos():
     """
 
     # https://investidor10.com.br/acoes/dividendos/2025/marco/
-    file = f"arquivos/dividendos_{datetime.today().strftime('%Y%m')}.txt"
-    file_rst = "arquivos/resultados_1t25.txt"
+    file = f"arquivos/dividendos_{hoje.strftime('%Y%m')}.txt"
 
     dic_dt_com = {}
-    hoje = datetime.today().strftime('%Y-%m-%d')
+    hoje_str = hoje.strftime('%Y-%m-%d')
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+    url_dividendos = f"https://investidor10.com.br/acoes/dividendos/{hoje.strftime('%Y')}/{hoje.strftime('%B')}/"
+
+    trimestre_resultados = "1t25"
+    file_rst = f"arquivos/resultados_{trimestre_resultados}.txt"
+    url_resultados = "https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
 
     try:
         # with open(file, encoding="utf8") as f:
         #     dados = f.read()
-        dados = web_scraping(f"https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
-        print(f"https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
+        dados = web_scraping_f(url_dividendos)
 
     except Exception as e:
         print(e)
-        print(f"Download https://investidor10.com.br/acoes/dividendos/{datetime.today().strftime('%Y')}/{datetime.today().strftime('%B')}/")
+        print(url_dividendos)
         print("Iniciando tentativa com requests")
 
         import requests
-        dados = requests.get("https://investidor10.com.br/acoes/dividendos/2025/julho/").content
+        dados = requests.get(url_dividendos).content
 
-            
     soup = BeautifulSoup(dados, 'html.parser')
 
     list_ = soup.find_all(attrs={'class': 'hover:bg-gray-50'})
@@ -391,33 +396,44 @@ def busca_ativos_dividendos():
             dic_dt_com[data] = []
         dic_dt_com[data].append(acao_ticker)
 
+
     # https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
-    with open(file_rst, encoding="utf8") as f:
-        dados_rst = f.read()
-        
+    try:
+        with open(file_rst, encoding="utf8") as f:
+            dados_rst = f.read()
+
+    except Exception as e:
+        print(e)
+        print("Executanto web scraping dos resultados")
+        dados_rst = web_scraping_f(url_resultados)
+
+        with open(file_rst, "a", encoding="utf8") as f:
+            f.write(dados_rst)
+
     soup_rst = BeautifulSoup(dados_rst, 'html.parser')
-    
+
     list_rst = soup_rst.find_all('tr')
     del list_rst[0]
-    
+
     for ticker in list_rst:
         acao_rst = ticker.find_all('td')[1].text
         data_rst = datetime.strptime(ticker.find_all('td')[2].text[:10], "%d/%m/%Y").strftime('%Y-%m-%d')
         hr_divlg_rst = ticker.find_all('td')[3].text
-        
-        if data_rst == hoje:
+
+        if data_rst == hoje_str:
             if data_rst not in dic_dt_com:
                 dic_dt_com[data_rst] = []
             dic_dt_com[data_rst].append(acao_rst)
 
-    set_ = set(dic_dt_com[hoje]) if hoje in dic_dt_com else ()
+    set_ = set(dic_dt_com[hoje_str]) if hoje_str in dic_dt_com else ()
 
     return set_
+
 
 def web_scraping(url):
     # initialize an instance of the chrome driver (browser)
     cService = webdriver.ChromeService(executable_path='C:/temp/chromedriver-win64/chromedriver.exe')
-    driver = webdriver.Chrome(service = cService)
+    driver = webdriver.Chrome(service=cService)
     # driver = webdriver.Chrome()
 
     # visit your target site
@@ -428,6 +444,18 @@ def web_scraping(url):
     codigo_fonte = driver.page_source
 
     # release the resources allocated by Selenium and shut down the browser
+    driver.quit()
+
+    return codigo_fonte
+
+
+def web_scraping_f(url):
+    driver = webdriver.Firefox()
+
+    # print(f"dentro web_scraping_f: {url}")
+    driver.get(url)
+
+    codigo_fonte = driver.page_source
     driver.quit()
 
     return codigo_fonte
