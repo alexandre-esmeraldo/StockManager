@@ -6,11 +6,16 @@ from datetime import datetime
 import re
 import locale
 from selenium import webdriver
+import gzip
+import json
 
 
 hoje = datetime.today()
+locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
+# =========================================================================================================================
 def leitura_arquivos(periodo):
+# =========================================================================================================================
     arq_zip = 'arquivos/COTAHIST_' + periodo + '.ZIP'
     arq_txt = 'COTAHIST_' + periodo + '.TXT'
 
@@ -43,8 +48,9 @@ def leitura_arquivos(periodo):
 
     return df_origem
 
-
+# =========================================================================================================================
 def carrega_dados(arquivos):
+# =========================================================================================================================
     df = leitura_arquivos(arquivos[0])
     for i in range(1, len(arquivos)):
         df = pd.concat([df, leitura_arquivos(arquivos[i])])
@@ -71,7 +77,7 @@ def carrega_dados(arquivos):
 
     return df
 
-
+# =========================================================================================================================
 def condicao05(df_tmp):
     return 1 if (df_tmp["pcMax"] > 0.5) else 0
 
@@ -117,8 +123,9 @@ def somatorio_pc_max_dia(df_ent, pc, index_name):
 def busca_media(df_ent, coluna, index_name):
     return df_ent.groupby("Acao")[coluna].agg("mean").reset_index(name=index_name)
 
-
+# =========================================================================================================================
 def monta_df_periodos(df_origem, qt_dias):
+# =========================================================================================================================
     df_dias = busca_periodos(df_origem, qt_dias)
 
     df05 = somatorio_pc_max_dia(df_dias, 0.5, "0.5%")
@@ -146,8 +153,9 @@ def monta_df_periodos(df_origem, qt_dias):
 
     return df_result
 
-
+# =========================================================================================================================
 def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech, bar):
+# =========================================================================================================================
     dados = df_n_dias.loc[
         (df_n_dias["AvgVol"] > vol) & (df_n_dias[col_pc] >= pc_min) & (df_n_dias["AvgVrFech"] > avg_vr_fech)]
 
@@ -155,14 +163,17 @@ def monta_tabela(df_n_dias, vol, col_pc, pc_min, avg_vr_fech, bar):
 
     return dados
 
-
+# =========================================================================================================================
 def consulta_acao(df, cd_acao):
+# =========================================================================================================================
     df_out = df.copy()
     df_out['vrVolume'] = df['vrVolume'].map('{:,.0f}'.format)
     return df_out.loc[(df_out["Acao"] == cd_acao.upper())].replace(0, "").sort_values(["dtPregao"], ascending=False)
 
 
+# =========================================================================================================================
 def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
+# =========================================================================================================================
     qt_dias_full = qt_dias + dias_ant
     df_n_dias = busca_periodos(df, qt_dias_full)
 
@@ -192,15 +203,17 @@ def monta_lucro_periodo(df, qt_dias, dias_ant, ic_sort):
 
     return df_pc_n_dias
 
-
+# =========================================================================================================================
 def filtra_data(df, data="max"):
+# =========================================================================================================================
     # formato da data: 'aaaa-mm-dd'
     dt_max = df["dtPregao"].max() if data == "max" else datetime.strptime(data, '%Y-%m-%d')
     df_max_dt = df.loc[df["dtPregao"] == dt_max]
     return df_max_dt
 
-
+# =========================================================================================================================
 def verifica_mudanca_vol(df, data="max", multiplier=3):
+# =========================================================================================================================
     # data = "2024-04-04"
     df_max_dt = filtra_data(df, data)
 
@@ -225,7 +238,7 @@ def verifica_mudanca_vol(df, data="max", multiplier=3):
 
     return merge_max
 
-
+# =========================================================================================================================
 def set_bold(val):
     return "font-weight: bold"
 
@@ -234,8 +247,9 @@ def color_negative_red(val):
     color = 'red' if val < 0 else 'green'
     return 'color: %s' % color
 
-
+# =========================================================================================================================
 def consulta_acao_formatada(df, cd_acao, limite=1000):
+# =========================================================================================================================
     acao_temp = consulta_acao(df, cd_acao)[0:limite]
     acao = acao_temp[:-1].copy() if len(acao_temp) > 30 else acao_temp.copy()
 
@@ -273,9 +287,10 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
 
     return acao
 
-
+# =========================================================================================================================
 def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" ", count3="", label3=" ", title=" ", set_lim="",
                  figb=3):
+# =========================================================================================================================
     fig, ax = plt.subplots(1, figsize=(20, figb))
     if set_lim:
         ax.set_ylim(-30, 30)
@@ -286,12 +301,14 @@ def gera_grafico(list_datas, count1, label1=" ", count2="", label2=" ", count3="
         plt.plot(list(reversed(list_datas)), list(reversed(count2)), label=label2, color="black")
     if count3:
         plt.plot(list(reversed(list_datas)), list(reversed(count3)), label=label3, color="red")
+    plt.xticks(list(reversed(list_datas)))
     plt.legend()
     plt.title(title.upper(), fontsize=20)
     plt.show()
 
-
+# =========================================================================================================================
 def grandes_variacoes_volume(df):
+# =========================================================================================================================
     vol_var = verifica_mudanca_vol(df, data="max", multiplier=5)
     vol_var["pcVar_y"] = pd.to_numeric(vol_var["pcVar_y"].replace({"%": ""}, regex=True))
     vol_var = vol_var.sort_values(["pcVar_y", "vrVolume_y"], ascending=False)
@@ -300,92 +317,72 @@ def grandes_variacoes_volume(df):
 
     return vol_var if not vol_var.empty else '<< Sem ações com Grandes Variações de Volume >>'
 
+# =========================================================================================================================
+# def busca_ativos_dividendos_old():
+# # =========================================================================================================================
+#     file = "arquivos/agenda_dividendos.html"
 
-def busca_ativos_dividendos_old():
-    file = "arquivos/agenda_dividendos.html"
+#     with open(file, encoding="utf8") as f:
+#         dados = f.read()
 
-    with open(file, encoding="utf8") as f:
-        dados = f.read()
+#     soup = BeautifulSoup(dados, 'html.parser')
 
-    soup = BeautifulSoup(dados, 'html.parser')
+#     dict_meses = {
+#         'Janeiro': '01',
+#         'Fevereiro': '02',
+#         'Março': '03',
+#         'Abril': '04',
+#         'Maio': '05',
+#         'Junho': '06',
+#         'Julho': '07',
+#         'Agosto': '08',
+#         'Setembro': '09',
+#         'Outubro': '10',
+#         'Novembro': '11',
+#         'Dezembro': '12'
+#     }
 
-    dict_meses = {
-        'Janeiro': '01',
-        'Fevereiro': '02',
-        'Março': '03',
-        'Abril': '04',
-        'Maio': '05',
-        'Junho': '06',
-        'Julho': '07',
-        'Agosto': '08',
-        'Setembro': '09',
-        'Outubro': '10',
-        'Novembro': '11',
-        'Dezembro': '12'
-    }
+#     list_month_group_payment = soup.find_all(attrs={'class': 'month-group-payment'})
 
-    list_month_group_payment = soup.find_all(attrs={'class': 'month-group-payment'})
+#     dic_dividendos = {}
+#     set_retorno = {'inicial'}
+#     padrao_regex_ano = r'\b\d{4}\b'
+#     for month_group in list_month_group_payment:
+#         dia = month_group.find(attrs={'class': 'payment-day'}).text
+#         mes = month_group.find(attrs={'class': 'text-center'}).text
+#         if len(month_group.find_all('h3')) > 0:
+#             # ano = month_group.find_all('h3')[0].contents[0][-5:-1]
+#             ano = re.findall(padrao_regex_ano, month_group.find_all('h3')[0].contents[0])[0]
 
-    dic_dividendos = {}
-    set_retorno = {'inicial'}
-    padrao_regex_ano = r'\b\d{4}\b'
-    for month_group in list_month_group_payment:
-        dia = month_group.find(attrs={'class': 'payment-day'}).text
-        mes = month_group.find(attrs={'class': 'text-center'}).text
-        if len(month_group.find_all('h3')) > 0:
-            # ano = month_group.find_all('h3')[0].contents[0][-5:-1]
-            ano = re.findall(padrao_regex_ano, month_group.find_all('h3')[0].contents[0])[0]
+#         data = datetime.strptime(f'{dia}-{dict_meses[mes]}-{ano}', '%d-%m-%Y')
 
-        data = datetime.strptime(f'{dia}-{dict_meses[mes]}-{ano}', '%d-%m-%Y')
+#         i = 0
+#         dic_dividendos[data] = []
+#         for ativo in month_group.find_all('p'):
+#             if (i % 3) == 0:
+#                 dic_dividendos[data].append(ativo.text)
+#                 if data.strftime('%Y-%m-%d') == hoje.strftime('%Y-%m-%d'):
+#                     set_retorno.add(ativo.text)
+#             i += 1
 
-        i = 0
-        dic_dividendos[data] = []
-        for ativo in month_group.find_all('p'):
-            if (i % 3) == 0:
-                dic_dividendos[data].append(ativo.text)
-                if data.strftime('%Y-%m-%d') == hoje.strftime('%Y-%m-%d'):
-                    set_retorno.add(ativo.text)
-            i += 1
+#     set_retorno.remove('inicial')
+#     return set_retorno
 
-    set_retorno.remove('inicial')
-    return set_retorno
-
-
-def busca_ativos_dividendos():
+# =========================================================================================================================
+def busca_ativos_dividendos(dados_div):
+# =========================================================================================================================
     """
-    Busca ativos que possuem dividendos com 'data com' na data atual, e ativos que divulgam seus balanços na data atual.
+    Busca ativos que possuem dividendos com 'data com' na data atual.
 
     Returns:
-        set: Um conjunto contendo os códigos desses ativos.
+        dict: Um conjunto contendo os códigos desses ativos.
+
+    Fonte:
+        https://investidor10.com.br/acoes/dividendos/2025/marco/
     """
 
-    # https://investidor10.com.br/acoes/dividendos/2025/marco/
-    file = f"arquivos/dividendos_{hoje.strftime('%Y%m')}.txt"
-
     dic_dt_com = {}
-    hoje_str = hoje.strftime('%Y-%m-%d')
-    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
-    url_dividendos = f"https://investidor10.com.br/acoes/dividendos/{hoje.strftime('%Y')}/{hoje.strftime('%B')}/"
-
-    trimestre_resultados = "1t25"
-    file_rst = f"arquivos/resultados_{trimestre_resultados}.txt"
-    url_resultados = "https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
-
-    try:
-        # with open(file, encoding="utf8") as f:
-        #     dados = f.read()
-        dados = web_scraping_f(url_dividendos)
-
-    except Exception as e:
-        print(e)
-        print(url_dividendos)
-        print("Iniciando tentativa com requests")
-
-        import requests
-        dados = requests.get(url_dividendos).content
-
-    soup = BeautifulSoup(dados, 'html.parser')
-
+    soup = BeautifulSoup(dados_div, 'html.parser')
     list_ = soup.find_all(attrs={'class': 'hover:bg-gray-50'})
 
     for acao in list_:
@@ -396,20 +393,23 @@ def busca_ativos_dividendos():
             dic_dt_com[data] = []
         dic_dt_com[data].append(acao_ticker)
 
+    return dic_dt_com
 
-    # https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
-    try:
-        with open(file_rst, encoding="utf8") as f:
-            dados_rst = f.read()
+# =========================================================================================================================
+def busca_ativos_resultados(dados_rst):
+# =========================================================================================================================
+    """
+    Busca ativos com divulgação de resultados no dia.
 
-    except Exception as e:
-        print(e)
-        print("Executanto web scraping dos resultados")
-        dados_rst = web_scraping_f(url_resultados)
+    Returns:
+        dict: Um conjunto contendo os códigos desses ativos.
 
-        with open(file_rst, "a", encoding="utf8") as f:
-            f.write(dados_rst)
+    Fonte:
+        https://www.moneytimes.com.br/calendario-de-resultados-do-1t25-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/
+    """
 
+    dic_dt_com = {}
+    dados_rst = dados_rst.replace("11/082025", "11/08/2025")
     soup_rst = BeautifulSoup(dados_rst, 'html.parser')
 
     list_rst = soup_rst.find_all('tr')
@@ -418,23 +418,73 @@ def busca_ativos_dividendos():
     for ticker in list_rst:
         acao_rst = ticker.find_all('td')[1].text
         data_rst = datetime.strptime(ticker.find_all('td')[2].text[:10], "%d/%m/%Y").strftime('%Y-%m-%d')
-        hr_divlg_rst = ticker.find_all('td')[3].text
+        # hr_divlg_rst = ticker.find_all('td')[3].text
 
-        if data_rst == hoje_str:
-            if data_rst not in dic_dt_com:
-                dic_dt_com[data_rst] = []
-            dic_dt_com[data_rst].append(acao_rst)
+        if data_rst not in dic_dt_com:
+            dic_dt_com[data_rst] = []
+        dic_dt_com[data_rst].append(acao_rst)
 
-    set_ = set(dic_dt_com[hoje_str]) if hoje_str in dic_dt_com else ()
+    return dic_dt_com
+
+# =========================================================================================================================
+def busca_ativos_dividendos_resultados():
+# =========================================================================================================================
+    hoje_str = hoje.strftime('%Y-%m-%d')
+    trimestre_resultados = "2t25"
+    url_dividendos = f"https://investidor10.com.br/acoes/dividendos/{hoje.strftime('%Y')}/{hoje.strftime('%B')}/"
+    url_resultados = f"https://www.moneytimes.com.br/calendario-de-resultados-do-{trimestre_resultados}-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
+
+    page_source_list = web_scraping_f([url_dividendos, url_resultados])
+
+    dict_div = busca_ativos_dividendos(page_source_list[0])
+    dict_rst = busca_ativos_resultados(page_source_list[1])
+
+    print("\nDividendos:")
+    print_rst_div(dict_div)
+    # for i, j in dict_div.items():
+    #     print(f"{i}: {j}")
+
+    print("\nResultados:")
+    print_rst_div(dict_rst)
+
+    final_list = []
+    try:
+        final_list.extend(dict_div[hoje_str])
+    except Exception as e:
+        print("sem dividendos")
+        print(e)
+
+    try:
+        final_list.extend(dict_rst[hoje_str])
+    except Exception as e:
+        print("sem resultados")
+
+    set_ = set(final_list)
 
     return set_
 
 
+def print_rst_div(dict_):
+    for i, j in dict_.items():
+        if len(j) > 12:
+            print(f"{i}:", end="")
+            a, b = 0, 0
+            fill = " "
+            while b < len(j):
+                b += 12
+                print(f"{fill}{j[a:b]}")
+                fill = "            "
+                a = b
+        else:
+            print(f"{i}: {j}")
+
+
+# =========================================================================================================================
 def web_scraping(url):
+# =========================================================================================================================
     # initialize an instance of the chrome driver (browser)
     cService = webdriver.ChromeService(executable_path='C:/temp/chromedriver-win64/chromedriver.exe')
     driver = webdriver.Chrome(service=cService)
-    # driver = webdriver.Chrome()
 
     # visit your target site
     # driver.get("https://br.investing.com/earnings-calendar/")
@@ -448,14 +498,51 @@ def web_scraping(url):
 
     return codigo_fonte
 
+# =========================================================================================================================
+def web_scraping_f(url_list):
+# =========================================================================================================================
+    page_source_list = []
 
-def web_scraping_f(url):
-    driver = webdriver.Firefox()
+    try:
+        cService = webdriver.FirefoxService(executable_path="C:/temp/geckodriver.exe")
+        driver = webdriver.Firefox(service=cService)
+    except Exception as e:
+        driver = webdriver.Firefox()
 
-    # print(f"dentro web_scraping_f: {url}")
-    driver.get(url)
+    for url in url_list:
+        print(url)
+        driver.get(url)
+        page_source = driver.page_source
+        page_source_list.append(page_source)
 
-    codigo_fonte = driver.page_source
     driver.quit()
 
-    return codigo_fonte
+    return page_source_list
+
+# =========================================================================================================================
+def write_json_gzip(data, jsonfilename):                         # 1. data
+# =========================================================================================================================
+    '''
+    https://stackoverflow.com/questions/39450065/python-3-read-write-compressed-json-objects-from-to-gzip-file
+    '''
+    json_str = data.to_json(date_format='iso', orient='records') # 2. string (i.e. JSON)
+    json_bytes = json_str.encode('utf-8')                        # 3. bytes (i.e. UTF-8)
+
+    with gzip.open(jsonfilename, 'w') as fout:                   # 4. fewer bytes (i.e. gzip)
+        fout.write(json_bytes)
+
+# =========================================================================================================================
+def read_json_gzip(jsonfilename):
+# =========================================================================================================================
+    '''
+    https://stackoverflow.com/questions/39450065/python-3-read-write-compressed-json-objects-from-to-gzip-file
+    '''
+    with gzip.open(jsonfilename, 'r') as fin:        # 4. gzip
+        json_bytes = fin.read()                      # 3. bytes (i.e. UTF-8)
+
+    json_str = json_bytes.decode('utf-8')            # 2. string (i.e. JSON)
+    df_json = pd.read_json(json_str)
+
+    df_json['dtPregao'] = pd.to_datetime(df_json['dtPregao']).dt.strftime('%Y-%m-%d')
+
+    return df_json
