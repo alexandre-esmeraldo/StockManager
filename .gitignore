@@ -1,2 +1,19 @@
-# Ignore Excel files
+# Ignore file Extensions
 *.xlsx
+*.pdf
+*.json
+*.txt
+*.zip
+*.html
+*.csv
+
+# General
+.idea/
+.ipynb_checkpoints/
+Outros/
+__pycache__/
+*.old
+*.ant
+*teste*
+*cuDF*
+*negative*
