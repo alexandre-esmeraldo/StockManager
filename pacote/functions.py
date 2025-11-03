@@ -427,37 +427,38 @@ def busca_ativos_resultados(dados_rst):
     return dic_dt_com
 
 # =========================================================================================================================
-def busca_ativos_dividendos_resultados():
+def busca_ativos_dividendos_resultados(url_resultados):
 # =========================================================================================================================
     hoje_str = hoje.strftime('%Y-%m-%d')
-    trimestre_resultados = "2t25"
+    # trimestre_resultados = "2t25"
     url_dividendos = f"https://investidor10.com.br/acoes/dividendos/{hoje.strftime('%Y')}/{hoje.strftime('%B')}/"
-    url_resultados = f"https://www.moneytimes.com.br/calendario-de-resultados-do-{trimestre_resultados}-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
+    # url_resultados = f"https://www.moneytimes.com.br/calendario-de-resultados-do-{trimestre_resultados}-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
 
     page_source_list = web_scraping_f([url_dividendos, url_resultados])
 
     dict_div = busca_ativos_dividendos(page_source_list[0])
     dict_rst = busca_ativos_resultados(page_source_list[1])
 
-    print("\nDividendos:")
+    print("\n>> Dividendos <<")
     print_rst_div(dict_div)
     # for i, j in dict_div.items():
     #     print(f"{i}: {j}")
 
-    print("\nResultados:")
+    print("\n>> Resultados <<")
     print_rst_div(dict_rst)
 
     final_list = []
     try:
         final_list.extend(dict_div[hoje_str])
+        print(f'\nAções com "data com" no dia de hoje para recebimento de dividendos: {dict_div[hoje_str]}')
     except Exception as e:
-        print("sem dividendos")
-        print(e)
+        print("\nSem dividendos no dia de hoje.")
 
     try:
         final_list.extend(dict_rst[hoje_str])
+        print(f"Empresas com resultado agendado para hoje: {dict_rst[hoje_str]}")
     except Exception as e:
-        print("sem resultados")
+        print("\nSem resultados no dia de hoje.")
 
     set_ = set(final_list)
 
