@@ -8,16 +8,18 @@ import locale
 from selenium import webdriver
 import gzip
 import json
+import os
 
 
 hoje = datetime.today()
 locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 
 # =========================================================================================================================
-def leitura_arquivos(periodo):
+def leitura_arquivos(path_arquivos_b3, arquivo_b3_zip):
 # =========================================================================================================================
-    arq_zip = 'arquivos/COTAHIST_' + periodo + '.ZIP'
-    arq_txt = 'COTAHIST_' + periodo + '.TXT'
+    # https://bvmf.bmfbovespa.com.br/InstDados/SerHist/COTAHIST_A2025.ZIP
+    arq_zip = f'{path_arquivos_b3}{arquivo_b3_zip}'
+    arq_txt = arquivo_b3_zip.replace('.ZIP', '.TXT')
 
     DTEXCH, CODNEG, PREABE, PREMAX, PREMIN, PREULT, VOLTOT = ([] for i in range(7))
 
@@ -49,11 +51,16 @@ def leitura_arquivos(periodo):
     return df_origem
 
 # =========================================================================================================================
-def carrega_dados(arquivos):
+def carrega_dados(path_arquivos_b3):
 # =========================================================================================================================
-    df = leitura_arquivos(arquivos[0])
-    for i in range(1, len(arquivos)):
-        df = pd.concat([df, leitura_arquivos(arquivos[i])])
+    # df = leitura_arquivos(arquivos[0])
+    # for i in range(1, len(arquivos)):
+    #     df = pd.concat([df, leitura_arquivos(arquivos[i])])
+
+    lista_arqs_b3_zip = os.listdir(path_arquivos_b3)
+    df = leitura_arquivos(path_arquivos_b3, lista_arqs_b3_zip[0])
+    for i in range(1, len(lista_arqs_b3_zip)):
+        df = pd.concat([df, leitura_arquivos(path_arquivos_b3, lista_arqs_b3_zip[i])])
 
     df = df.sort_values(["Acao", "dtPregao"], ascending=True)
 
@@ -252,6 +259,7 @@ def consulta_acao_formatada(df, cd_acao, limite=1000):
 # =========================================================================================================================
     acao_temp = consulta_acao(df, cd_acao)[0:limite]
     acao = acao_temp[:-1].copy() if len(acao_temp) > 30 else acao_temp.copy()
+    acao = acao.reset_index()
 
     acao.loc[:, 'pcVar'] = pd.to_numeric(acao['pcVar'], errors='coerce')
     acao.loc[:, 'pcVar'] = acao['pcVar'].apply(lambda x: x * 0.01)
@@ -456,9 +464,9 @@ def busca_ativos_dividendos_resultados(url_resultados):
 
     try:
         final_list.extend(dict_rst[hoje_str])
-        print(f"Empresas com resultado agendado para hoje: {dict_rst[hoje_str]}")
+        print(f"Empresas com resultado agendado para hoje: {dict_rst[hoje_str]}\n")
     except Exception as e:
-        print("\nSem resultados no dia de hoje.")
+        print("Sem resultados no dia de hoje.\n")
 
     set_ = set(final_list)
 
