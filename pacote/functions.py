@@ -2,7 +2,7 @@ from zipfile import ZipFile
 import pandas as pd
 import matplotlib.pyplot as plt
 from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import date, datetime, timedelta
 import re
 import locale
 from selenium import webdriver
@@ -51,7 +51,7 @@ def leitura_arquivos(path_arquivos_b3, arquivo_b3_zip):
     return df_origem
 
 # =========================================================================================================================
-def carrega_dados(path_arquivos_b3):
+def carrega_dados(path_arquivos_b3, limite_dias):
 # =========================================================================================================================
     # df = leitura_arquivos(arquivos[0])
     # for i in range(1, len(arquivos)):
@@ -63,6 +63,13 @@ def carrega_dados(path_arquivos_b3):
         df = pd.concat([df, leitura_arquivos(path_arquivos_b3, lista_arqs_b3_zip[i])])
 
     df = df.sort_values(["Acao", "dtPregao"], ascending=True)
+
+    # Limita a quantidade de dias
+    if limite_dias > 0:
+        if limite_dias < 50:
+            limite_dias = 50
+        dia_inicial = pd.Timestamp(date.today() - timedelta(days=limite_dias))
+        df = df.loc[df["dtPregao"] > dia_inicial]
 
     df["pcVar"], df["pcMax"], df["pcMin"], df["pcAbert"] = [
         ((df.vrFech / df.vrFech.shift(1)) - 1) * 100
@@ -435,22 +442,49 @@ def busca_ativos_resultados(dados_rst):
     return dic_dt_com
 
 # =========================================================================================================================
-def busca_ativos_dividendos_resultados(url_resultados):
+def busca_ativos_dividendos_resultados(url_resultados, ic_divid_result):
 # =========================================================================================================================
+    if not ic_divid_result:
+        return set()
+
     hoje_str = hoje.strftime('%Y-%m-%d')
+    path_dividendos_json = f"arquivos/json/dividendos_{hoje_str}.json"
+    path_resultados_json = f"arquivos/json/resultados_{hoje_str}.json"
+    web_scraping_list = []
+    index = 0
+
     # trimestre_resultados = "2t25"
     url_dividendos = f"https://investidor10.com.br/acoes/dividendos/{hoje.strftime('%Y')}/{hoje.strftime('%B')}/"
     # url_resultados = f"https://www.moneytimes.com.br/calendario-de-resultados-do-{trimestre_resultados}-veja-as-datas-e-horarios-dos-balancos-das-empresas-da-b3-lmrs/"
 
-    page_source_list = web_scraping_f([url_dividendos, url_resultados])
+    if os.path.isfile(path_dividendos_json):
+        print("Leitura dos dividendos em arquivo json.")
+        dict_div = leitura_dict(path_dividendos_json)
+    else:
+        web_scraping_list.append(url_dividendos)
 
-    dict_div = busca_ativos_dividendos(page_source_list[0])
-    dict_rst = busca_ativos_resultados(page_source_list[1])
+    if os.path.isfile(path_resultados_json):
+        print("Leitura dos resultados em arquivo json.")
+        dict_rst = leitura_dict(path_resultados_json)
+    else:
+        web_scraping_list.append(url_resultados)
+
+    if web_scraping_list:
+        page_source_list = web_scraping_f(web_scraping_list)
+
+        if url_dividendos in web_scraping_list:
+            print("Leitura dos dividendos da Web.")
+            dict_div = busca_ativos_dividendos(page_source_list[index])
+            salva_dict(dict_div, path_dividendos_json)
+            index += 1
+
+        if url_resultados in web_scraping_list:
+            print("Leitura dos resultados da Web.")
+            dict_rst = busca_ativos_resultados(page_source_list[index])
+            salva_dict(dict_rst, path_resultados_json)
 
     print("\n>> Dividendos <<")
     print_rst_div(dict_div)
-    # for i, j in dict_div.items():
-    #     print(f"{i}: {j}")
 
     print("\n>> Resultados <<")
     print_rst_div(dict_rst)
@@ -555,3 +589,19 @@ def read_json_gzip(jsonfilename):
     df_json['dtPregao'] = pd.to_datetime(df_json['dtPregao']).dt.strftime('%Y-%m-%d')
 
     return df_json
+
+# =========================================================================================================================
+def salva_dict(dict_, path_json):
+# =========================================================================================================================
+    # Open the file in write mode ('w')
+    with open(path_json, 'w') as f:
+        # Convert the set to a list for JSON serialization
+        json.dump(dict_, f, indent=4)
+
+# =========================================================================================================================
+def leitura_dict(path_json):
+# =========================================================================================================================
+    with open(path_json, 'r') as f:
+        dict_ = json.load(f)
+
+    return dict_
