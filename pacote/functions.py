@@ -444,6 +444,8 @@ def busca_ativos_resultados(dados_rst):
 # =========================================================================================================================
 def busca_ativos_dividendos_resultados(url_resultados, ic_divid_result):
 # =========================================================================================================================
+    # Testar https://www.b3.com.br/pt_br/noticias/calendario-de-feriados-2025.htm
+
     if not ic_divid_result:
         return set()
 
