@@ -431,13 +431,17 @@ def busca_ativos_resultados(dados_rst):
     del list_rst[0]
 
     for ticker in list_rst:
-        acao_rst = ticker.find_all('td')[1].text
-        data_rst = datetime.strptime(ticker.find_all('td')[2].text[:10], "%d/%m/%Y").strftime('%Y-%m-%d')
-        # hr_divlg_rst = ticker.find_all('td')[3].text
+        if ticker.find_all('td')[2].text[:6] != 'Semana':
+            acao_rst = ticker.find_all('td')[1].text
+            try:
+                data_rst = datetime.strptime(ticker.find_all('td')[2].text[:8], "%d/%m/%y").strftime('%Y-%m-%d')
+            except Exception as e:
+                data_rst = datetime.strptime(ticker.find_all('td')[2].text[:10], "%d/%m/%Y").strftime('%Y-%m-%d')
+            # hr_divlg_rst = ticker.find_all('td')[3].text
 
-        if data_rst not in dic_dt_com:
-            dic_dt_com[data_rst] = []
-        dic_dt_com[data_rst].append(acao_rst)
+            if data_rst not in dic_dt_com:
+                dic_dt_com[data_rst] = []
+            dic_dt_com[data_rst].append(acao_rst)
 
     return dic_dt_com
 
